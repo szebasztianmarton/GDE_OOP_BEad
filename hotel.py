@@ -1,121 +1,118 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 import tkinter as tk
-from tkcalendar import Calendar
+import tkcalendar as tkcalendar
 
-class Room(ABC):
-    def __init__(self, room_number: int, price: int):
-        self.room_number = room_number
-        self.price = price
-        self.bookings = []
+class szoba(ABC):
+    def __init__(self, szoba_szam: int, ar: int):
+        self.szoba_szam = szoba_szam
+        self.ar = ar
+        self.foglalas = []
 
-    def is_available(self, start_date: datetime, end_date: datetime) -> bool:
-        for booking in self.bookings:
-            if not (booking['end_date'] < start_date or booking['start_date'] > end_date):
+    def is_available(self, erkezes: datetime, tavozas: datetime) -> bool:
+        for booking in self.foglalas:
+            if not (booking['távozás'] < erkezes or booking['Érkezés'] > tavozas):
                 return False
         return True
 
-    def cancel_booking(self, start_date: datetime) -> None:
-        self.bookings = [booking for booking in self.bookings if booking['start_date']!= start_date]
+    def cancel_booking(self, erkezes: datetime) -> None:
+        self.foglalas = [booking for booking in self.foglalas if booking['Érkezés']!= erkezes]
 
-    def book(self, start_date: datetime, end_date: datetime) -> str:
-        if self.is_available(start_date, end_date):
-            self.bookings.append({'start_date': start_date, 'end_date': end_date})
-            return f"Room {self.room_number} booked from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}."
+    def book(self, erkezes: datetime, tavozas: datetime) -> str:
+        if self.is_available(erkezes, tavozas):
+            self.foglalas.append({'Érkezés': erkezes, 'távozás': tavozas})
+            return f"A szoba {self.szoba_szam} {erkezes.strftime('%Y-%m-%d')}-tól {tavozas.strftime('%Y-%m-%d')}-ig lefoglalva.✅"
         else:
-            return f"Room {self.room_number} is already booked for this period."
+            return f"{self.szoba_szam} lefoglalva :D ."
 
-    def get_bookings(self) -> str:
+    def get_foglalas(self) -> str:
         booking_date_ranges = []
-        for booking in self.bookings:
-            start_date_str = booking['start_date'].strftime('%Y-%m-%d')
-            end_date_str = booking['end_date'].strftime('%Y-%m-%d')
-            booking_date_ranges.append(f"{start_date_str} - {end_date_str}")
+        for booking in self.foglalas:
+            erkezes_str = booking['Érkezes'].strftime('%Y-%m-%d')
+            tavozas_str = booking['Távozás'].strftime('%Y-%m-%d')
+            booking_date_ranges.append(f"{erkezes_str} - {tavozas_str}")
         return ", ".join(booking_date_ranges)
 
     @abstractmethod
     def __str__(self) -> str:
         pass
 
-class SingleRoom(Room):
+class Egyagyasszoba(szoba):
     def __str__(self) -> str:
-        bookings_str = self.get_bookings()
-        return f"Single room. Room number: {self.room_number}, Price: {self.price}, Bookings: {bookings_str if bookings_str else 'No bookings'}"
+        foglalas_str = self.get_foglalas()
+        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}, foglalás: {foglalas_str if foglalas_str else 'üres szoba'}"
 
-class DoubleRoom(Room):
+class Ketagyasszoba(szoba):
     def __str__(self) -> str:
-        bookings_str = self.get_bookings()
-        return f"Double room. Room number: {self.room_number}, Price: {self.price}, Bookings: {bookings_str if bookings_str else 'No bookings'}"
+        foglalas_str = self.get_foglalas()
+        return f"Ez itt egy Kétágyas szoba, Száma: {self.szoba_szam}, ar: {self.ar}, foglalás: {foglalas_str if foglalas_str else 'üres szoba'}"
 
 class Hotel:
     def __init__(self):
-        self.rooms = []
+        self.szobas = []
 
-    def add_room(self, room: Room) -> None:
-        self.rooms.append(room)
+    def add_szoba(self, szoba: szoba) -> None:
+        self.szobas.append(szoba)
 
     def load_data(self) -> None:
-        self.add_room(SingleRoom(101, 50000))
-        self.add_room(DoubleRoom(102, 60000))
+        self.add_szoba(Egyagyasszoba(101, 50000))
+        self.add_szoba(Ketagyasszoba(102, 60000))
 
-    def get_room_bookings(self) -> str:
-        return '\n'.join(str(room) for room in self.rooms)
+    def get_szoba_foglalas(self) -> str:
+        return '\n'.join(str(szoba) for szoba in self.szobas)
 
-    def book_room(self, room_number: int, start_date: datetime, end_date: datetime) -> str:
-        for room in self.rooms:
-            if room.room_number == room_number:
-                return room.book(start_date, end_date)
-        return "Room not found."
+    def book_szoba(self, szoba_szam: int, erkezes: datetime, tavozas: datetime) -> str:
+        for szoba in self.szobas:
+            if szoba.szoba_szam == szoba_szam:
+                return szoba.book(erkezes, tavozas)
+        return "A szoba nem létezik. :("
 
 def create_gui(hotel: Hotel) -> None:
     root = tk.Tk()
-    root.title("Hotel Booking System")
+    root.title("GDE_OOP_HOTEL")
 
-    def show_bookings():
-        bookings_text.delete(1.0, tk.END)
-        bookings_text.insert(tk.END, hotel.get_room_bookings())
+    def show_foglalas():
+        foglalas_text.delete(1.0, tk.END)
+        foglalas_text.insert(tk.END, hotel.get_szoba_foglalas())
 
-    def book_room():
+    def book_szoba():
         try:
-            room_number = int(room_number_entry.get())
-            start_date = calendar.get_date()
-            end_date = calendar.get_date()
-            result = hotel.book_room(room_number, start_date, end_date)
+            szoba_szam = int(szoba_szam_entry.get())
+            erkezes = erkezes_entry.get_date()
+            tavozas = tavozas_entry.get_date()
+            result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
             result_text.delete(1.0, tk.END)
             result_text.insert(tk.END, result)
         except ValueError:
             result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, "Invalid date format. Please use yyyy-mm-dd.")
+            result_text.insert(tk.END, "Hiányzik a szobaszám!")
 
-    room_number_label = tk.Label(root, text="Room number:")
-    room_number_label.pack()
-    room_number_entry = tk.Entry(root)
-    room_number_entry.pack()
+    szoba_szam_label = tk.Label(root, text="Szoba száma:")
+    szoba_szam_label.pack()
+    szoba_szam_entry = tk.Entry(root)
+    szoba_szam_entry.pack()
 
-    calendar = Calendar(root, selectmode='day')
-    calendar.pack(pady=20)
+    erkezes_label = tk.Label(root, text="Érkezés:")
+    erkezes_label.pack()
+    erkezes_entry = tkcalendar.DateEntry(root, mindate=None)
+    erkezes_entry.pack()
 
-    start_date_label = tk.Label(root, text="Start date:")
-    start_date_label.pack()
-    start_date_entry = tk.Entry(root)
-    start_date_entry.pack()
+    tavozas_label = tk.Label(root, text="Távozás:")
+    tavozas_label.pack()
+    tavozas_entry = tkcalendar.DateEntry(root, mindate=None)
+    tavozas_entry.pack()
 
-    end_date_label = tk.Label(root, text="End date:")
-    end_date_label.pack()
-    end_date_entry = tk.Entry(root)
-    end_date_entry.pack()
-
-    book_button = tk.Button(root, text="Book", command=book_room)
+    book_button = tk.Button(root, text="Book", command=book_szoba)
     book_button.pack()
 
     result_text = tk.Text(root, height=10, width=50)
     result_text.pack()
 
-    bookings_button = tk.Button(root, text="Show bookings", command=show_bookings)
-    bookings_button.pack()
+    foglalas_button = tk.Button(root, text="Az eddigi foglalások megjelenítése", command=show_foglalas)
+    foglalas_button.pack()
 
-    bookings_text = tk.Text(root, height=20, width=50)
-    bookings_text.pack()
+    foglalas_text = tk.Text(root, height=20, width=75)
+    foglalas_text.pack()
 
     root.mainloop()
 
