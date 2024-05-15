@@ -77,16 +77,26 @@ def create_gui(hotel: Hotel) -> None:
         foglalas_text.insert(tk.END, hotel.get_szoba_foglalas())
 
     def book_szoba():
-        try:
-            szoba_szam = int(szoba_szam_entry.get())
-            erkezes = erkezes_entry.get_date()
-            tavozas = tavozas_entry.get_date()
-            result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
-            result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, result)
-        except ValueError:
-            result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, "Hiányzik a szobaszám!")
+    try:
+        szoba_szam_entry = tk.Entry(root)  # Create a Tkinter Entry widget for the user to input the room number
+        szoba_szam_entry.pack()
+        
+
+        erkezes = erkezes_entry.get_date()
+        tavozas = tavozas_entry.get_date()
+
+        # Get the room number from the Entry widget
+        szoba_szam = int(szoba_szam_entry.get())
+
+        result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
+        result_text.delete(1.0, tk.END)
+        result_text.insert(tk.END, result)
+    except ValueError:
+        result_text.delete(1.0, tk.END)
+        result_text.insert(tk.END, "Hiányzik a szobaszám!")
+    except Exception as e:
+        result_text.delete(1.0, tk.END)
+        result_text.insert(tk.END, f"Valami hiba történt: {e}")
 
     szoba_listbox = tk.Listbox(root)
     for szoba in hotel.szobas:
