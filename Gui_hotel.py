@@ -166,7 +166,7 @@ def create_gui(hotel: Hotel) -> None:
     ar_text = tk.Text(root, height=1, width=60)
     ar_text.pack()
 
-    book_button = tk.Button(root, text="Book", command=book_room)
+    book_button = tk.Button(root, text="Foglalás!", command=book_room)
     book_button.pack()
 
     result_text = tk.Text(root, height=5, width=85)
