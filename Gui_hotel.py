@@ -40,12 +40,12 @@ class szoba(ABC):
 class Egyagyasszoba(szoba):
     def __str__(self) -> str:
         foglalas_str = self.get_foglalas()
-        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, állása: {foglalas_str if foglalas_str else 'üres szoba'}"
+        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {foglalas_str if foglalas_str else 'üres szoba'}"
 
 class Ketagyasszoba(szoba):
     def __str__(self) -> str:
         foglalas_str = self.get_foglalas()
-        return f"Ez itt egy Kétágyas szoba, Száma: {self.szoba_szam}, ar: {self.ar}Ft, állása {foglalas_str if foglalas_str else 'üres szoba'}"
+        return f"Ez itt egy Kétágyas szoba, Száma: {self.szoba_szam}, ar: {self.ar}Ft, jelenleg {'foglalt.' if foglalas_str else 'üres.'}"
 
 class Hotel:
     def __init__(self):
@@ -55,8 +55,8 @@ class Hotel:
         self.szobas.append(szoba)
 
     def load_data(self) -> None:
-        self.add_szoba(Egyagyasszoba(101, 50000))
-        self.add_szoba(Ketagyasszoba(102, 60000))
+        self.add_szoba(Egyagyasszoba(101, 20000))
+        self.add_szoba(Ketagyasszoba(102, 30000))
 
     def get_szoba_foglalas(self) -> str:
         return '\n'.join(str(szoba) for szoba in self.szobas)
@@ -71,37 +71,16 @@ class Hotel:
 def create_gui(hotel: Hotel) -> None:
     root = tk.Tk()
     root.title("GDE_OOP_HOTEL")
+    root.geometry("800x600")  # Set the GUI size to 800x600 pixels
 
-    def show_foglalas():
-        foglalas_text.delete(1.0, tk.END)
-        foglalas_text.insert(tk.END, hotel.get_szoba_foglalas())
+    szoba_label = tk.Label(root, text="Válasszon szobát:")
+    szoba_label.pack()
 
-    def book_szoba():
-    try:
-        szoba_szam_entry = tk.Entry(root)  # Create a Tkinter Entry widget for the user to input the room number
-        szoba_szam_entry.pack()
-        
+    szoba_var = tk.StringVar()
+    szoba_var.set(next((f"{szoba.szoba_szam}: {szoba.__class__.__name__}" for szoba in hotel.szobas), None))  # default value
 
-        erkezes = erkezes_entry.get_date()
-        tavozas = tavozas_entry.get_date()
-
-        # Get the room number from the Entry widget
-        szoba_szam = int(szoba_szam_entry.get())
-
-        result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
-        result_text.delete(1.0, tk.END)
-        result_text.insert(tk.END, result)
-    except ValueError:
-        result_text.delete(1.0, tk.END)
-        result_text.insert(tk.END, "Hiányzik a szobaszám!")
-    except Exception as e:
-        result_text.delete(1.0, tk.END)
-        result_text.insert(tk.END, f"Valami hiba történt: {e}")
-
-    szoba_listbox = tk.Listbox(root)
-    for szoba in hotel.szobas:
-        szoba_listbox.insert(tk.END, f"{szoba.szoba_szam}: {szoba.__class__.__name__}")
-    szoba_listbox.pack()
+    szoba_option = tk.OptionMenu(root, szoba_var, *[f"{szoba.szoba_szam}: {szoba.__class__.__name__}" for szoba in hotel.szobas])
+    szoba_option.pack()
 
     erkezes_label = tk.Label(root, text="Érkezés:")
     erkezes_label.pack()
@@ -111,18 +90,91 @@ def create_gui(hotel: Hotel) -> None:
     tavozas_label = tk.Label(root, text="Távozás:")
     tavozas_label.pack()
     tavozas_entry = tkcalendar.DateEntry(root, mindate=None)
+
+    # Set the mindate of tavozas_entry to be one day after the erkezes_entry
+    def update_tavozas_mindate(event):
+        erkezes_date = erkezes_entry.get_date()
+        if erkezes_date:
+            tavozas_entry.config(mindate=erkezes_date + timedelta(days+1))
+
+    erkezes_entry.bind("<<DateEntrySelected>>", update_tavozas_mindate)
     tavozas_entry.pack()
 
-    book_button = tk.Button(root, text="Book", command=book_szoba)
+    def calculate_price():
+        try:
+            erkezes = erkezes_entry.get_date()
+            tavozas = tavozas_entry.get_date()
+
+            if erkezes >= tavozas:
+                price_text.delete(1.0, tk.END)
+                price_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
+                return
+
+            # Get the room number and price from the OptionMenu
+            szoba_szam, szoba_type = szoba_var.get().split(":")
+            szoba_szam = int(szoba_szam)
+            for szoba in hotel.szobas:
+                if szoba.szoba_szam == szoba_szam:
+                    price = szoba.ar
+                    break
+
+          
+            napok_szama = (tavozas - erkezes).days
+            total_price = napok_szama * price
+
+            # Display the total price
+            price_text.delete(1.0, tk.END)
+            price_text.insert(tk.END, f"A foglalás ára: {total_price} Ft.")
+        except ValueError:
+            price_text.delete(1.0, tk.END)
+            price_text.insert(tk.END, "Hiányzik a szobaszám vagy a dátum!")
+        except Exception as e:
+            price_text.delete(1.0, tk.END)
+            price_text.insert(tk.END, f"Valami hiba történt: {e}")
+
+    def book_room():
+        try:
+            erkezes = erkezes_entry.get_date()
+            tavozas = tavozas_entry.get_date()
+
+            if erkezes >= tavozas:
+                result_text.delete(1.0, tk.END)
+                result_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
+                return
+
+            # Get the room number from the OptionMenu
+            szoba_szam = int(szoba_var.get().split(":")[0])
+
+            result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, result)
+        except ValueError:
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, "Hiányzik a szobaszám!")
+        except Exception as e:
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, f"Valami hiba történt: {e}")
+
+    def show_foglalas():
+        foglalas_text.delete(1.0, tk.END)
+        foglalas_text.insert(tk.END, hotel.get_szoba_foglalas())
+
+    price_button = tk.Button(root, text="Számítás", command=calculate_price)
+    price_button.pack()
+
+    price_text = tk.Text(root, height=1, width=60)
+    price_text.pack()
+
+    book_button = tk.Button(root, text="Book", command=book_room)
     book_button.pack()
 
-    result_text = tk.Text(root, height=10, width=75)
+    result_text = tk.Text(root, height=5, width=85)
     result_text.pack()
 
     foglalas_button = tk.Button(root, text="Az eddigi foglalások megjelenítése", command=show_foglalas)
     foglalas_button.pack()
 
-    foglalas_text = tk.Text(root, height=10, width=75)
+    foglalas_text = tk.Text(root, height=5, width=85)
     foglalas_text.pack()
 
     root.mainloop()
