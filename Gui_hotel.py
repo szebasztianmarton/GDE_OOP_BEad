@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 import tkinter as tk
 import tkcalendar as tkcalendar
+from datetime import timedelta
 
 class szoba(ABC):
     def __init__(self, szoba_szam: int, ar: int):
@@ -10,13 +11,13 @@ class szoba(ABC):
         self.foglalas = []
 
     def is_available(self, erkezes: datetime, tavozas: datetime) -> bool:
-        for booking in self.foglalas:
-            if not (booking['tavozas'] < erkezes or booking['erkezes'] > tavozas):
+        for foglalas in self.foglalas:
+            if not (foglalas['tavozas'] < erkezes or foglalas['erkezes'] > tavozas):
                 return False
         return True
 
-    def cancel_booking(self, erkezes: datetime) -> None:
-        self.foglalas = [booking for booking in self.foglalas if booking['erkezes']!= erkezes]
+    def cancel_foglalas(self, erkezes: datetime) -> None:
+        self.foglalas = [foglalas for foglalas in self.foglalas if foglalas['erkezes']!= erkezes]
 
     def book(self, erkezes: datetime, tavozas: datetime) -> str:
         if self.is_available(erkezes, tavozas):
@@ -26,12 +27,12 @@ class szoba(ABC):
             return f"{self.szoba_szam} "
 
     def get_foglalas(self) -> str:
-        booking_date_ranges = []
-        for booking in self.foglalas:
-            erkezes_str = booking['erkezes'].strftime('%Y-%m-%d')
-            tavozas_str = booking['tavozas'].strftime('%Y-%m-%d')
-            booking_date_ranges.append(f"{erkezes_str} - {tavozas_str}")
-        return ", ".join(booking_date_ranges)
+        foglalas_date_ranges = []
+        for foglalas in self.foglalas:
+            erkezes_str = foglalas['erkezes'].strftime('%Y-%m-%d')
+            tavozas_str = foglalas['tavozas'].strftime('%Y-%m-%d')
+            foglalas_date_ranges.append(f"{erkezes_str} - {tavozas_str}")
+        return ", ".join(foglalas_date_ranges)
 
     @abstractmethod
     def __str__(self) -> str:
@@ -40,7 +41,7 @@ class szoba(ABC):
 class Egyagyasszoba(szoba):
     def __str__(self) -> str:
         foglalas_str = self.get_foglalas()
-        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {foglalas_str if foglalas_str else 'üres szoba'}"
+        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {foglalas_str   if foglalas_str else 'üres szoba'}"
 
 class Ketagyasszoba(szoba):
     def __str__(self) -> str:
@@ -95,42 +96,42 @@ def create_gui(hotel: Hotel) -> None:
     def update_tavozas_mindate(event):
         erkezes_date = erkezes_entry.get_date()
         if erkezes_date:
-            tavozas_entry.config(mindate=erkezes_date + timedelta(days+1))
+            tavozas_entry.config(mindate=erkezes_date + timedelta(days=2))
 
     erkezes_entry.bind("<<DateEntrySelected>>", update_tavozas_mindate)
     tavozas_entry.pack()
 
-    def calculate_price():
+    def calculate_ar():
         try:
             erkezes = erkezes_entry.get_date()
             tavozas = tavozas_entry.get_date()
 
             if erkezes >= tavozas:
-                price_text.delete(1.0, tk.END)
-                price_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
+                ar_text.delete(1.0, tk.END)
+                ar_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
                 return
 
-            # Get the room number and price from the OptionMenu
+            
             szoba_szam, szoba_type = szoba_var.get().split(":")
             szoba_szam = int(szoba_szam)
             for szoba in hotel.szobas:
                 if szoba.szoba_szam == szoba_szam:
-                    price = szoba.ar
+                    ar = szoba.ar
                     break
 
           
             napok_szama = (tavozas - erkezes).days
-            total_price = napok_szama * price
+            total_ar = napok_szama * ar
 
-            # Display the total price
-            price_text.delete(1.0, tk.END)
-            price_text.insert(tk.END, f"A foglalás ára: {total_price} Ft.")
+            
+            ar_text.delete(1.0, tk.END)
+            ar_text.insert(tk.END, f"A foglalás ára: {total_ar} Ft.")
         except ValueError:
-            price_text.delete(1.0, tk.END)
-            price_text.insert(tk.END, "Hiányzik a szobaszám vagy a dátum!")
+            ar_text.delete(1.0, tk.END)
+            ar_text.insert(tk.END, "Hiányzik a szobaszám vagy a dátum!")
         except Exception as e:
-            price_text.delete(1.0, tk.END)
-            price_text.insert(tk.END, f"Valami hiba történt: {e}")
+            ar_text.delete(1.0, tk.END)
+            ar_text.insert(tk.END, f"Valami hiba történt: {e}")
 
     def book_room():
         try:
@@ -142,7 +143,7 @@ def create_gui(hotel: Hotel) -> None:
                 result_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
                 return
 
-            # Get the room number from the OptionMenu
+            
             szoba_szam = int(szoba_var.get().split(":")[0])
 
             result = hotel.book_szoba(szoba_szam, erkezes, tavozas)
@@ -159,11 +160,11 @@ def create_gui(hotel: Hotel) -> None:
         foglalas_text.delete(1.0, tk.END)
         foglalas_text.insert(tk.END, hotel.get_szoba_foglalas())
 
-    price_button = tk.Button(root, text="Számítás", command=calculate_price)
-    price_button.pack()
+    ar_button = tk.Button(root, text="Számítás", command=calculate_ar)
+    ar_button.pack()
 
-    price_text = tk.Text(root, height=1, width=60)
-    price_text.pack()
+    ar_text = tk.Text(root, height=1, width=60)
+    ar_text.pack()
 
     book_button = tk.Button(root, text="Book", command=book_room)
     book_button.pack()
