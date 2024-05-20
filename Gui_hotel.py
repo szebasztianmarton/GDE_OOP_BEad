@@ -41,12 +41,12 @@ class szoba(ABC):
 class Egyagyasszoba(szoba):
     def __str__(self) -> str:
         foglalas_str = self.get_foglalas()
-        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {foglalas_str   if foglalas_str else 'üres szoba'}"
+        return f"Ez itt Egyágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {'foglalt.' if foglalas_str else 'üres.'}"
 
 class Ketagyasszoba(szoba):
     def __str__(self) -> str:
         foglalas_str = self.get_foglalas()
-        return f"Ez itt egy Kétágyas szoba, Száma: {self.szoba_szam}, ar: {self.ar}Ft, jelenleg {'foglalt.' if foglalas_str else 'üres.'}"
+        return f"Ez itt egy Kétágyas szoba, Száma: {self.szoba_szam}, ára: {self.ar}Ft, jelenleg {'foglalt.' if foglalas_str else 'üres.'}"
 
 class Hotel:
     def __init__(self):
@@ -72,13 +72,13 @@ class Hotel:
 def create_gui(hotel: Hotel) -> None:
     root = tk.Tk()
     root.title("GDE_OOP_HOTEL")
-    root.geometry("800x600")  # Set the GUI size to 800x600 pixels
+    root.geometry("800x600")  
 
     szoba_label = tk.Label(root, text="Válasszon szobát:")
     szoba_label.pack()
 
     szoba_var = tk.StringVar()
-    szoba_var.set(next((f"{szoba.szoba_szam}: {szoba.__class__.__name__}" for szoba in hotel.szobas), None))  # default value
+    szoba_var.set(next((f"{szoba.szoba_szam}: {szoba.__class__.__name__}" for szoba in hotel.szobas), None))  
 
     szoba_option = tk.OptionMenu(root, szoba_var, *[f"{szoba.szoba_szam}: {szoba.__class__.__name__}" for szoba in hotel.szobas])
     szoba_option.pack()
@@ -92,7 +92,6 @@ def create_gui(hotel: Hotel) -> None:
     tavozas_label.pack()
     tavozas_entry = tkcalendar.DateEntry(root, mindate=None)
 
-    # Set the mindate of tavozas_entry to be one day after the erkezes_entry
     def update_tavozas_mindate(event):
         erkezes_date = erkezes_entry.get_date()
         if erkezes_date:
@@ -137,8 +136,8 @@ def create_gui(hotel: Hotel) -> None:
         try:
             erkezes = erkezes_entry.get_date()
             tavozas = tavozas_entry.get_date()
-
-            if erkezes >= tavozas:
+            
+            if erkezes > tavozas:
                 result_text.delete(1.0, tk.END)
                 result_text.insert(tk.END, "A távozás dátuma nem lehet korábbi, mint az érkezés dátuma!")
                 return
