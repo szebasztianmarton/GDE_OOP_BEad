@@ -119,6 +119,8 @@ def create_gui(hotel: Hotel) -> None:
                 if szoba.szoba_szam == szoba_szam:
                     ar = szoba.ar
                     break
+
+          
             napok_szama = (tavozas - erkezes).days
             total_ar = napok_szama * ar
 
